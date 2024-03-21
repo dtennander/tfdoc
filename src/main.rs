@@ -4,7 +4,6 @@ use std::iter;
 use chrono::{DateTime, Utc};
 use clap::Parser;
 use serde::Deserialize;
-use termimad::{Area, MadSkin};
 use tokio;
 
 
@@ -36,7 +35,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let provider_id = get_provider(provider).await?.id;
     let version_id = get_latest_version(provider_id).await?;
     let resource_docs = get_docs(resource, version_id).await?;
-    termimad::print_text(resource_docs.attributes.content.as_str());
+    let mut skipping_header = false;
+    let trimmed_content: String = resource_docs.attributes.content.lines().skip_while(|&l| {
+        if l == "---" {
+            skipping_header = !skipping_header;
+        }
+        return skipping_header
+    }).map(|l| l.to_string() + "\n").collect::<String>();
+    termimad::print_text(trimmed_content.as_str());
     Ok(())
 }
 
